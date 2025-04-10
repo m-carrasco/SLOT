@@ -529,7 +529,7 @@ namespace SLOT
         //Get constant int with the flags for the class check
         args.push_back(ConstantInt::get(IntegerType::get(lcx,32),class_flags.at(op)));
         //Get intrinsic function for class check
-        Function * fun = Intrinsic::getDeclaration(lmodule, Function::lookupIntrinsicID("llvm.is.fpclass"), val->getType());
+        Function * fun = Intrinsic::getDeclaration(lmodule, Intrinsic::lookupIntrinsicID("llvm.is.fpclass"), val->getType());
         return builder.CreateCall(fun,args);
     }
 
