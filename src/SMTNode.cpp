@@ -27,6 +27,15 @@ namespace SLOT
     inline BooleanNode SMTNode::BooleanChild(expr cont) { return BooleanNode(lcx,lmodule,builder,variables,cont); }
     inline BooleanNode SMTNode::BooleanChild(int index) { return BooleanNode(lcx,lmodule,builder,variables,contents.arg(index)); }
 
+    Value * ConcatTwoBV(Value* arg0, unsigned arg0Width, Value* arg1, unsigned arg1Width, IRBuilder<>& builder, LLVMContext& lcx){
+        const unsigned totalWidth = arg0Width + arg1Width;
+        auto totalWidthType = IntegerType::get(lcx, totalWidth);
+        auto sel0 = builder.CreateZExt(arg0, totalWidthType);
+        auto sel1 = builder.CreateZExt(arg1, totalWidthType);
+        auto sel2 = builder.CreateShl(sel0, ConstantInt::get(totalWidthType, arg1Width));
+        return builder.CreateOr(sel1, sel2);
+    }
+
     SMTNode::SMTNode(LLVMContext& t_lcx, Module* t_lmodule, IRBuilder<>& t_builder, const LLMAPPING& t_variables, expr t_contents) : lcx(t_lcx), lmodule(t_lmodule), builder(t_builder), variables(t_variables), contents(t_contents)
     {
 
@@ -407,12 +416,33 @@ namespace SLOT
                 case Z3_OP_BXNOR:
                     assert(contents.num_args()==2);
                     return builder.CreateNot(builder.CreateXor(BitvectorChild(0).ToLLVM(), BitvectorChild(1).ToLLVM()));
-                case Z3_OP_CONCAT:
-                    assert(contents.num_args()==2);
-                    sel0 = builder.CreateZExt(BitvectorChild(0).ToLLVM(), IntegerType::get(lcx, Width()));
-                    sel1 = builder.CreateZExt(BitvectorChild(1).ToLLVM(), IntegerType::get(lcx, Width()));
-                    sel2 = builder.CreateShl(sel0, ConstantInt::get(IntegerType::get(lcx, Width()), BitvectorChild(1).Width()));
-                    return builder.CreateOr(sel1, sel2);
+                    case Z3_OP_CONCAT: {
+                        unsigned numArgs = contents.num_args();
+                        assert(numArgs >= 2);  // Must have at least two arguments to concatenate
+                    
+                        // Start with the first bitvector
+                        Value* concatenatedResult = BitvectorChild(0).ToLLVM();
+                        unsigned totalWidth = BitvectorChild(0).Width();
+                    
+                        // Concatenate the rest of the bitvectors one by one
+                        for (unsigned i = 1; i < numArgs; ++i) {
+                            Value* nextBV = BitvectorChild(i).ToLLVM();
+                            unsigned nextWidth = BitvectorChild(i).Width();
+                    
+                            concatenatedResult = ConcatTwoBV(
+                                concatenatedResult,
+                                totalWidth,
+                                nextBV,
+                                nextWidth,
+                                builder,
+                                lcx
+                            );
+                    
+                            totalWidth += nextWidth;
+                        }
+                    
+                        return concatenatedResult;
+                    }
                 case Z3_OP_SIGN_EXT:
                     assert(contents.num_args()==1);
                     return builder.CreateSExt(BitvectorChild(0).ToLLVM(), IntegerType::get(lcx, Width()));
