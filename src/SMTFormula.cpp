@@ -15,14 +15,17 @@ namespace SLOT
         //context c;
         //Regular expression matching to get variables
         std::string s = string;
-        std::smatch m;
         std::regex e (R"(\((declare-fun\s(\|.*\||[\~\!\@\$\%\^\&\*_\-\+\=\<\>\.\?\/A-Za-z0-9]+)\s*\(\s*\)\s*(\(\s*_\s*FloatingPoint\s*(\d+)\s*(\d+)\s*\)|Float16|Float32|Float64|Float128|FPN|Bool|\(\s*_\s*BitVec\s*(\d+)\s*\))\s*|declare-const\s(\|.*\||[\~\!\@\$\%\^\&\*_\-\+\=\<\>\.\?\/A-Za-z0-9]+)\s*(\(\s*_\s*FloatingPoint\s*(\d+)\s*(\d+)\s*\)|Float16|Float32|Float64|Float128|FPN|Bool|\(\s*_\s*BitVec\s*(\d+)\s*\))\s*)\))");
 
         std::vector<Type*> types;
         std::vector<std::string> names;
         std::string temp = "";
-        while (std::regex_search(s, m, e))
+        std::sregex_iterator iter(s.begin(), s.end(), e);
+        std::sregex_iterator end;
+        for (; iter != end; ++iter)
         {
+            const std::smatch& m = *iter;
+
             if (m[2]!="")
             {
                 temp = m[2];
@@ -77,7 +80,6 @@ namespace SLOT
             {
                 throw UnsupportedTypeException("unsupported SMT variable type", names.back());
             }
-            s = m.suffix().str();
         }
 
 
