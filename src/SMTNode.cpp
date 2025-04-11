@@ -367,12 +367,20 @@ namespace SLOT
                 case Z3_OP_BSDIV:
                     assert(contents.num_args()==2);
                     return builder.CreateSelect(BitvectorChild(1).IsZero(), builder.CreateSelect(BitvectorChild(0).IsNegative(), one, mone), builder.CreateSDiv(BitvectorChild(0).ToLLVM(), BitvectorChild(1).ToLLVM()));
+                case Z3_OP_BSDIV_I:
+                    assert(contents.num_args()==2);
+                    // [z3's docs] It has the same semantics as Z3_OP_BSDIV, but created in a context where the second operand can be assumed to be non-zero.
+                    return builder.CreateSDiv(BitvectorChild(0).ToLLVM(), BitvectorChild(1).ToLLVM());
                 case Z3_OP_BUDIV:
                     assert(contents.num_args()==2);
                     return builder.CreateSelect(BitvectorChild(1).IsZero(), mone, builder.CreateUDiv(BitvectorChild(0).ToLLVM(), BitvectorChild(1).ToLLVM()));
                 case Z3_OP_BSREM:
                     assert(contents.num_args()==2);
                     return builder.CreateSelect(BitvectorChild(1).IsZero(), BitvectorChild(0).ToLLVM(), builder.CreateSRem(BitvectorChild(0).ToLLVM(), BitvectorChild(1).ToLLVM()));
+                case Z3_OP_BSREM_I:
+                    assert(contents.num_args()==2);
+                    // [z3's docs] It has the same semantics as Z3_OP_BSREM, but created in a context where the second operand can be assumed to be non-zero.
+                    return builder.CreateSRem(BitvectorChild(0).ToLLVM(), BitvectorChild(1).ToLLVM());
                 case Z3_OP_BUREM:
                     assert(contents.num_args()==2);
                     return BitvectorNode::LlURem(builder, BitvectorChild(0).ToLLVM(), BitvectorChild(1).ToLLVM());
